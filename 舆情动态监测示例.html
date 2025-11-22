@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>舆情动态监测 - "帧查官"智能分析系统</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --sentiment-positive: #2ecc71;
+            --sentiment-negative: #e74c3c;
+            --sentiment-neutral: #f39c12;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 30px 0;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        
+        .logo-icon {
+            font-size: 2.5rem;
+            margin-right: 15px;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .time-filter {
+            display: flex;
+            background-color: white;
+            border-radius: 30px;
+            padding: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .time-option {
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .time-option.active {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .metric-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--dark-color);
+        }
+        
+        .trend-up {
+            color: var(--success-color);
+        }
+        
+        .trend-down {
+            color: var(--accent-color);
+        }
+        
+        .section {
+            background-color: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .section-title {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--light-color);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .section-title i {
+            margin-right: 10px;
+            font-size: 1.4rem;
+        }
+        
+        .chart-container {
+            height: 300px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .chart-placeholder {
+            width: 90%;
+            height: 90%;
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .sentiment-distribution {
+            display: flex;
+            height: 40px;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .sentiment-positive {
+            background-color: var(--sentiment-positive);
+        }
+        
+        .sentiment-negative {
+            background-color: var(--sentiment-negative);
+        }
+        
+        .sentiment-neutral {
+            background-color: var(--sentiment-neutral);
+        }
+        
+        .sentiment-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        
+        .sentiment-label {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        
+        .sentiment-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .platform-tabs {
+            display: flex;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .platform-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .platform-tab.active {
+            border-bottom: 3px solid var(--secondary-color);
+            background-color: #f8fafc;
+        }
+        
+        .platform-tab:hover {
+            background-color: #f1f5f9;
+        }
+        
+        .platform-tab i {
+            margin-right: 8px;
+        }
+        
+        .mentions-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .mention-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+        }
+        
+        .mention-item:last-child {
+            border-bottom: none;
+        }
+        
+        .mention-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.2rem;
+            color: var(--dark-color);
+        }
+        
+        .mention-content {
+            flex: 1;
+        }
+        
+        .mention-user {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+        }
+        
+        .mention-text {
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        
+        .mention-meta {
+            display: flex;
+            font-size: 0.8rem;
+            color: var(--dark-color);
+        }
+        
+        .mention-platform {
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .mention-platform i {
+            margin-right: 5px;
+        }
+        
+        .sentiment-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .topic-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .topic-tag {
+            background-color: #e3f2fd;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .topic-tag i {
+            margin-right: 5px;
+            color: var(--secondary-color);
+        }
+        
+        .alert-item {
+            background-color: #fff5f5;
+            border-left: 4px solid var(--accent-color);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .alert-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+        }
+        
+        .alert-title i {
+            margin-right: 8px;
+        }
+        
+        .alert-info {
+            display: flex;
+            font-size: 0.9rem;
+            color: var(--dark-color);
+            margin-top: 10px;
+        }
+        
+        .alert-source {
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .alert-source i {
+            margin-right: 5px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: var(--dark-color);
+            font-size: 0.9rem;
+        }
+        
+        /* 图表样式 */
+        .chart-wrapper {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        .sentiment-chart {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .topic-chart {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        .platform-chart {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        .chart-legend {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            margin-right: 6px;
+            border-radius: 2px;
+        }
+        
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .platform-tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div>
+                    <h1>舆情动态监测系统</h1>
+                    <p class="subtitle">实时追踪《时空密语》项目市场反馈与观众情绪</p>
+                </div>
+            </div>
+        </header>
+        
+        <div class="dashboard-header">
+            <h2>舆情仪表盘</h2>
+            <div class="time-filter">
+                <div class="time-option active">24小时</div>
+                <div class="time-option">7天</div>
+                <div class="time-option">30天</div>
+                <div class="time-option">自定义</div>
+            </div>
+        </div>
+        
+        <div class="dashboard-grid">
+            <div class="metric-card">
+                <div class="metric-label">总讨论量</div>
+                <div class="metric-value">12,458</div>
+                <div class="metric-trend trend-up"><i class="fas fa-arrow-up"></i> 24.5% 较上周</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">情感倾向</div>
+                <div class="metric-value">78%</div>
+                <div class="metric-trend trend-up"><i class="fas fa-arrow-up"></i> 正面评价占比</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">热度指数</div>
+                <div class="metric-value">8.6</div>
+                <div class="metric-trend trend-up"><i class="fas fa-arrow-up"></i> 同类型排名前15%</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">潜在观众规模</div>
+                <div class="metric-value">285万</div>
+                <div class="metric-trend trend-up"><i class="fas fa-arrow-up"></i> 基于兴趣用户估算</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title">
+                <span><i class="fas fa-heart"></i> 情感分析</span>
+                <span>更新时间: 2023-10-26 14:30</span>
+            </h2>
+            
+            <div class="sentiment-distribution">
+                <div class="sentiment-positive" style="width: 78%;"></div>
+                <div class="sentiment-neutral" style="width: 15%;"></div>
+                <div class="sentiment-negative" style="width: 7%;"></div>
+            </div>
+            
+            <div class="sentiment-labels">
+                <div class="sentiment-label">
+                    <div class="sentiment-color sentiment-positive"></div>
+                    正面 78%
+                </div>
+                <div class="sentiment-label">
+                    <div class="sentiment-color sentiment-neutral"></div>
+                    中性 15%
+                </div>
+                <div class="sentiment-label">
+                    <div class="sentiment-color sentiment-negative"></div>
+                    负面 7%
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-wrapper">
+                    <div class="sentiment-chart" id="sentimentChart"></div>
+                    <div class="chart-legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #2ecc71;"></div>
+                            <span>正面情绪</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #e74c3c;"></div>
+                            <span>负面情绪</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-bullhorn"></i> 热门话题</h2>
+            
+            <div class="topic-tags">
+                <div class="topic-tag"><i class="fas fa-hashtag"></i> 时空密语定档</div>
+                <div class="topic-tag"><i class="fas fa-hashtag"></i> 周雨薇演技</div>
+                <div class="topic-tag"><i class="fas fa-hashtag"></i> 陈默导演新作</div>
+                <div class="topic-tag"><i class="fas fa-hashtag"></i> 科幻爱情片</div>
+                <div class="topic-tag"><i class="fas fa-hashtag"></i> 吴昊周雨薇CP感</div>
+                <div class="topic-tag"><i class="fas fa-hashtag"></i> 时间穿越设定</div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-wrapper">
+                    <div class="topic-chart" id="topicChart"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-exclamation-triangle"></i> 舆情预警</h2>
+            
+            <div class="alert-item">
+                <div class="alert-title"><i class="fas fa-bell"></i> 负面话题热度上升</div>
+                <p>话题"#时空密语特效粗糙#"在微博平台讨论量在6小时内增长320%，需关注相关舆论走向。</p>
+                <div class="alert-info">
+                    <div class="alert-source"><i class="fas fa-calendar"></i> 首次发现: 2023-10-26 10:15</div>
+                    <div class="alert-source"><i class="fas fa-chart-line"></i> 当前热度: 68 (中等)</div>
+                </div>
+            </div>
+            
+            <div class="alert-item">
+                <div class="alert-title"><i class="fas fa-bell"></i> 竞品同期宣发加强</div>
+                <p>同类型科幻电影《星际回响》今日发布终极预告，可能分流部分关注度。</p>
+                <div class="alert-info">
+                    <div class="alert-source"><i class="fas fa-calendar"></i> 首次发现: 2023-10-26 09:30</div>
+                    <div class="alert-source"><i class="fas fa-chart-line"></i> 影响程度: 中等</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-comments"></i> 平台讨论分析</h2>
+            
+            <div class="platform-tabs">
+                <div class="platform-tab active">
+                    <i class="fab fa-weibo"></i> 微博
+                </div>
+                <div class="platform-tab">
+                    <i class="fab fa-douban"></i> 豆瓣
+                </div>
+                <div class="platform-tab">
+                    <i class="fab fa-zhihu"></i> 知乎
+                </div>
+                <div class="platform-tab">
+                    <i class="fas fa-video"></i> 抖音
+                </div>
+                <div class="platform-tab">
+                    <i class="fab fa-reddit"></i> B站
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-wrapper">
+                    <div class="platform-chart" id="platformChart"></div>
+                </div>
+            </div>
+            
+            <div class="mentions-list">
+                <div class="mention-item">
+                    <div class="mention-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="mention-content">
+                        <div class="mention-user">电影爱好者小张</div>
+                        <div class="mention-text">《时空密语》的预告片太棒了！周雨薇和吴昊的CP感绝了，陈默导演的悬疑手法一如既往地出色，已经等不及要看了！</div>
+                        <div class="mention-meta">
+                            <div class="mention-platform"><i class="fab fa-weibo"></i> 微博</div>
+                            <div class="mention-time">2小时前</div>
+                            <div style="margin-left: auto; display: flex; align-items: center;">
+                                <div class="sentiment-indicator sentiment-positive"></div>
+                                <span>正面</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mention-item">
+                    <div class="mention-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="mention-content">
+                        <div class="mention-user">科幻迷老王</div>
+                        <div class="mention-text">时间穿越的设定有点老套，希望正片能有创新。不过陈默导演的悬疑功底还是值得期待的。</div>
+                        <div class="mention-meta">
+                            <div class="mention-platform"><i class="fab fa-zhihu"></i> 知乎</div>
+                            <div class="mention-time">4小时前</div>
+                            <div style="margin-left: auto; display: flex; align-items: center;">
+                                <div class="sentiment-indicator sentiment-neutral"></div>
+                                <span>中性</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mention-item">
+                    <div class="mention-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="mention-content">
+                        <div class="mention-user">影视吐槽君</div>
+                        <div class="mention-text">预告片里的特效有点廉价感，希望正片不要让人失望。国产科幻还需要更多投入啊！</div>
+                        <div class="mention-meta">
+                            <div class="mention-platform"><i class="fab fa-weibo"></i> 微博</div>
+                            <div class="mention-time">5小时前</div>
+                            <div style="margin-left: auto; display: flex; align-items: center;">
+                                <div class="sentiment-indicator sentiment-negative"></div>
+                                <span>负面</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mention-item">
+                    <div class="mention-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="mention-content">
+                        <div class="mention-user">小雨的追剧日常</div>
+                        <div class="mention-text">为了周雨薇看的预告片，她的演技越来越好了！这种科幻爱情题材很适合她，期待！</div>
+                        <div class="mention-meta">
+                            <div class="mention-platform"><i class="fas fa-video"></i> 抖音</div>
+                            <div class="mention-time">6小时前</div>
+                            <div style="margin-left: auto; display: flex; align-items: center;">
+                                <div class="sentiment-indicator sentiment-positive"></div>
+                                <span>正面</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2 class="section-title"><i class="fas fa-lightbulb"></i> 舆情应对建议</h2>
+            
+            <div class="topic-tags">
+                <div class="topic-tag"><i class="fas fa-check-circle"></i> 加强特效场景宣传</div>
+                <div class="topic-tag"><i class="fas fa-check-circle"></i> 释放更多幕后花絮</div>
+                <div class="topic-tag"><i class="fas fa-check-circle"></i> 主创互动直播</div>
+                <div class="topic-tag"><i class="fas fa-check-circle"></i> 针对性回应质疑</div>
+            </div>
+            
+            <div class="alert-item" style="background-color: #f0f7ff; border-left-color: var(--secondary-color);">
+                <div class="alert-title" style="color: var(--secondary-color);"><i class="fas fa-bullhorn"></i> 建议行动</div>
+                <p>针对"特效粗糙"的负面讨论，建议：1) 发布高质量特效片段进行回应；2) 安排特效团队访谈，展示制作细节；3) 在社交媒体发起"最美特效场景"投票活动，引导正面讨论。</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>本报告由"帧查官"AI影视决策支持系统生成 · 数据更新时间: 2023-10-26 14:30</p>
+            <p>监测平台: 微博、豆瓣、知乎、抖音、B站、快手、小红书等主流社交平台</p>
+        </div>
+    </div>
+
+    <script>
+        // 平台标签切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const platformTabs = document.querySelectorAll('.platform-tab');
+            
+            platformTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // 移除所有标签的active类
+                    platformTabs.forEach(t => t.classList.remove('active'));
+                    // 为当前点击的标签添加active类
+                    this.classList.add('active');
+                    
+                    // 在实际应用中，这里应该加载对应平台的数据
+                    // 此示例中我们只是简单演示交互效果
+                });
+            });
+            
+            // 时间筛选功能
+            const timeOptions = document.querySelectorAll('.time-option');
+            
+            timeOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // 移除所有选项的active类
+                    timeOptions.forEach(t => t.classList.remove('active'));
+                    // 为当前点击的选项添加active类
+                    this.classList.add('active');
+                });
+            });
+            
+            // 创建情感趋势图
+            createSentimentChart();
+            
+            // 创建话题热度图
+            createTopicChart();
+            
+            // 创建平台分布图
+            createPlatformChart();
+            
+            // 模拟实时数据更新
+            function updateMetrics() {
+                // 在实际应用中，这里会从服务器获取最新数据
+                // 此示例中我们只是简单演示数据变化
+                const totalMentions = document.querySelector('.metric-card:nth-child(1) .metric-value');
+                const currentValue = parseInt(totalMentions.textContent.replace(',', ''));
+                totalMentions.textContent = (currentValue + Math.floor(Math.random() * 100)).toLocaleString();
+                
+                // 每30秒更新一次数据
+                setTimeout(updateMetrics, 30000);
+            }
+            
+            // 启动数据更新
+            updateMetrics();
+        });
+        
+        function createSentimentChart() {
+            const sentimentChart = document.getElementById('sentimentChart');
+            const canvas = document.createElement('canvas');
+            sentimentChart.appendChild(canvas);
+            
+            const ctx = canvas.getContext('2d');
+            const width = sentimentChart.offsetWidth;
+            const height = sentimentChart.offsetHeight;
+            canvas.width = width;
+            canvas.height = height;
+            
+            // 绘制坐标轴
+            ctx.strokeStyle = '#aaa';
+            ctx.lineWidth = 1;
+            
+            // Y轴
+            ctx.beginPath();
+            ctx.moveTo(50, 30);
+            ctx.lineTo(50, height - 50);
+            ctx.stroke();
+            
+            // X轴
+            ctx.beginPath();
+            ctx.moveTo(50, height - 50);
+            ctx.lineTo(width - 30, height - 50);
+            ctx.stroke();
+            
+            // Y轴标签
+            ctx.fillStyle = '#555';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let i = 0; i <= 5; i++) {
+                const y = 30 + (height - 80) * (1 - i / 5);
+                ctx.fillText((i * 20).toString(), 45, y);
+            }
+            
+            // X轴标签 - 过去30天的日期
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            const dates = [];
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                dates.push(`${date.getMonth()+1}/${date.getDate()}`);
+            }
+            
+            const xStep = (width - 80) / (dates.length - 1);
+            for (let i = 0; i < dates.length; i += 5) {
+                const x = 50 + i * xStep;
+                ctx.fillText(dates[i], x, height - 35);
+            }
+            
+            // 生成情感数据
+            const positiveData = [];
+            const negativeData = [];
+            
+            // 生成随机但趋势向上的正面数据
+            let currentPositive = 65;
+            let currentNegative = 20;
+            
+            for (let i = 0; i < dates.length; i++) {
+                // 添加一些随机波动
+                currentPositive += (Math.random() - 0.4) * 5;
+                currentNegative += (Math.random() - 0.4) * 5;
+                
+                // 确保数据在合理范围内
+                currentPositive = Math.max(50, Math.min(85, currentPositive));
+                currentNegative = Math.max(5, Math.min(30, currentNegative));
+                
+                // 添加总体上升趋势
+                if (i > 15) {
+                    currentPositive += 0.3;
+                    currentNegative -= 0.2;
+                }
+                
+                positiveData.push(currentPositive);
+                negativeData.push(currentNegative);
+            }
+            
+            // 绘制正面情绪曲线
+            ctx.strokeStyle = '#2ecc71';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let i = 0; i < positiveData.length; i++) {
+                const x = 50 + i * xStep;
+                const y = 30 + (height - 80) * (1 - positiveData[i] / 100);
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            
+            // 绘制负面情绪曲线
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < negativeData.length; i++) {
+                const x = 50 + i * xStep;
+                const y = 30 + (height - 80) * (1 - negativeData[i] / 100);
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            
+            // 添加标题
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('情感趋势变化曲线图 (过去30天)', width / 2, 10);
+        }
+        
+        function createTopicChart() {
+            const topicChart = document.getElementById('topicChart');
+            const canvas = document.createElement('canvas');
+            topicChart.appendChild(canvas);
+            
+            const ctx = canvas.getContext('2d');
+            const width = topicChart.offsetWidth;
+            const height = topicChart.offsetHeight;
+            canvas.width = width;
+            canvas.height = height;
+            
+            // 话题数据
+            const topics = [
+                { name: '时空密语定档', value: 95 },
+                { name: '周雨薇演技', value: 82 },
+                { name: '陈默导演新作', value: 78 },
+                { name: '科幻爱情片', value: 65 },
+                { name: '吴昊周雨薇CP感', value: 58 },
+                { name: '时间穿越设定', value: 45 }
+            ];
+            
+            // 绘制柱状图
+            const barWidth = (width - 100) / topics.length;
+            const maxValue = 100;
+            
+            // 绘制坐标轴
+            ctx.strokeStyle = '#aaa';
+            ctx.lineWidth = 1;
+            
+            // Y轴
+            ctx.beginPath();
+            ctx.moveTo(60, 30);
+            ctx.lineTo(60, height - 50);
+            ctx.stroke();
+            
+            // X轴
+            ctx.beginPath();
+            ctx.moveTo(60, height - 50);
+            ctx.lineTo(width - 30, height - 50);
+            ctx.stroke();
+            
+            // Y轴标签
+            ctx.fillStyle = '#555';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let i = 0; i <= 5; i++) {
+                const y = 30 + (height - 80) * (1 - i / 5);
+                ctx.fillText((i * 20).toString(), 55, y);
+            }
+            
+            // 绘制柱状图
+            topics.forEach((topic, index) => {
+                const x = 70 + index * barWidth;
+                const barHeight = (topic.value / maxValue) * (height - 100);
+                const y = height - 50 - barHeight;
+                
+                // 绘制柱状
+                ctx.fillStyle = '#3498db';
+                ctx.fillRect(x, y, barWidth - 10, barHeight);
+                
+                // 绘制数值
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(topic.value.toString(), x + (barWidth - 10) / 2, y - 10);
+                
+                // 绘制标签
+                ctx.fillStyle = '#555';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                
+                // 处理长标签 - 换行显示
+                const words = topic.name.split('');
+                const maxCharsPerLine = 4;
+                const lines = [];
+                
+                for (let i = 0; i < words.length; i += maxCharsPerLine) {
+                    lines.push(words.slice(i, i + maxCharsPerLine).join(''));
+                }
+                
+                lines.forEach((line, lineIndex) => {
+                    ctx.fillText(line, x + (barWidth - 10) / 2, height - 35 + lineIndex * 12);
+                });
+            });
+            
+            // 添加标题
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('话题热度对比图', width / 2, 10);
+        }
+        
+        function createPlatformChart() {
+            const platformChart = document.getElementById('platformChart');
+            const canvas = document.createElement('canvas');
+            platformChart.appendChild(canvas);
+            
+            const ctx = canvas.getContext('2d');
+            const width = platformChart.offsetWidth;
+            const height = platformChart.offsetHeight;
+            canvas.width = width;
+            canvas.height = height;
+            
+            // 平台数据
+            const platforms = [
+                { name: '微博', value: 45, color: '#e6162d' },
+                { name: '豆瓣', value: 20, color: '#2e963d' },
+                { name: '知乎', value: 15, color: '#0084ff' },
+                { name: '抖音', value: 12, color: '#000000' },
+                { name: 'B站', value: 8, color: '#fb7299' }
+            ];
+            
+            // 计算总数
+            const total = platforms.reduce((sum, platform) => sum + platform.value, 0);
+            
+            // 绘制饼图
+            let startAngle = 0;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = Math.min(width, height) / 2 - 40;
+            
+            platforms.forEach(platform => {
+                const sliceAngle = (platform.value / total) * 2 * Math.PI;
+                
+                // 绘制扇形
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+                ctx.closePath();
+                
+                ctx.fillStyle = platform.color;
+                ctx.fill();
+                
+                // 绘制标签
+                const labelAngle = startAngle + sliceAngle / 2;
+                const labelX = centerX + (radius + 20) * Math.cos(labelAngle);
+                const labelY = centerY + (radius + 20) * Math.sin(labelAngle);
+                
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`${platform.name} ${platform.value}%`, labelX, labelY);
+                
+                startAngle += sliceAngle;
+            });
+            
+            // 添加标题
+            ctx.fillStyle = '#2c3e50';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('平台讨论量分布图', width / 2, 20);
+        }
+    </script>
+</body>
+</html>
